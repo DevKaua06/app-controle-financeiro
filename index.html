@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F4F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1318" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caderneta">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Caderneta</title>
+<style>
+:root{
+  --nav:64px;
+  --fundo:#F2F4F6; --papel:#FFFFFF; --tinta:#14212B; --suave:#5B6873; --linha:#DCE2E7;
+  --acento:#2748E8; --acento-tinta:#FFFFFF;
+  --despesa:#B93815; --receita:#0F7A5C; --alerta:#9A6700;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --fundo:#0D1318; --papel:#151D25; --tinta:#E9EEF2; --suave:#93A1AD; --linha:#26323C;
+    --acento:#7D93FF; --acento-tinta:#0D1318;
+    --despesa:#FF8F6B; --receita:#4FD1A5; --alerta:#E3B341;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--fundo);color:var(--tinta);
+  font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+body.trava{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+h2{margin:0}
+
+#app{max-width:520px;margin:0 auto;min-height:100dvh;padding-top:env(safe-area-inset-top)}
+.topo{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 6px}
+.topo h1{margin:0;font-size:1.6rem;font-weight:700;letter-spacing:-.025em}
+main{padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 28px)}
+.tela{padding-top:6px}
+
+/* sincronização */
+.sync{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--suave);
+  font-size:.8rem;min-height:44px;padding:0 0 0 8px}
+.ponto{width:9px;height:9px;border-radius:50%;background:var(--suave);flex:none}
+.sync[data-estado=ok] .ponto{background:var(--receita)}
+.sync[data-estado=pendente] .ponto,.sync[data-estado=enviando] .ponto{background:var(--alerta)}
+.sync[data-estado=erro] .ponto{background:var(--despesa)}
+
+/* navegação inferior */
+.abas{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--papel);border-top:1px solid var(--linha);
+  padding-bottom:env(safe-area-inset-bottom)}
+.abas-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav)}
+.abas button{border:0;background:transparent;color:var(--suave);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;font-size:.72rem;font-weight:600}
+.abas button[aria-current=page]{color:var(--acento)}
+.abas svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* formulário */
+.form{padding:8px 20px 0}
+.form .campo{margin-top:20px}
+.rot{display:block;font-size:.85rem;font-weight:600;color:var(--suave);margin-bottom:8px}
+.valor{display:flex;align-items:baseline;gap:10px;margin-top:18px;border-bottom:2px solid var(--linha);padding-bottom:6px}
+.valor:focus-within{border-color:var(--acento)}
+.moeda{font-size:1.4rem;color:var(--suave);font-weight:600}
+.valor input{flex:1;min-width:0;border:0;background:transparent;font-size:3.25rem;font-weight:700;
+  letter-spacing:-.03em;padding:0;outline:none}
+.valor input::placeholder{color:var(--suave);opacity:.45}
+.form[data-tipo=receita] .valor input{color:var(--receita)}
+.campo input{width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--linha);
+  border-radius:12px;background:var(--papel)}
+.seg{display:inline-flex;border:1px solid var(--linha);border-radius:12px;overflow:hidden;background:var(--papel)}
+.seg button{border:0;background:transparent;padding:0 18px;min-height:44px;font-weight:600;color:var(--suave)}
+.seg button[aria-pressed=true]{background:var(--acento);color:var(--acento-tinta)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;
+  border:1px solid var(--linha);background:var(--papel);font-weight:500}
+.chips button[aria-pressed=true]{background:var(--acento);border-color:var(--acento);color:var(--acento-tinta)}
+.cor{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.chips button[aria-pressed=true] .cor{box-shadow:0 0 0 2px var(--acento-tinta)}
+.mini{min-height:44px;min-width:44px;padding:0 14px;border-radius:12px;border:1px solid var(--linha);
+  background:var(--papel);font-weight:600}
+.linha-data{display:flex;gap:8px}
+.linha-data input{flex:1;width:auto}
+.passo{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.passo-n{min-width:3ch;text-align:center;font-weight:700;font-size:1.1rem}
+.previa{color:var(--suave);font-size:.9rem}
+.erro{color:var(--despesa);font-weight:600;margin:16px 0 0}
+.info{color:var(--suave);margin:16px 0 0;font-size:.9rem}
+.acoes{position:sticky;bottom:calc(var(--nav) + env(safe-area-inset-bottom));display:flex;gap:10px;
+  margin:20px -20px 0;padding:12px 20px;background:var(--fundo);border-top:1px solid var(--linha)}
+.primario{flex:1;min-height:52px;border:0;border-radius:14px;background:var(--acento);
+  color:var(--acento-tinta);font-weight:700;font-size:1.05rem;padding:0 18px}
+.perigo{min-height:52px;padding:0 18px;border-radius:14px;border:1px solid var(--despesa);
+  background:transparent;color:var(--despesa);font-weight:700}
+.sec{min-height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--linha);
+  background:var(--papel);font-weight:600}
+
+/* listas */
+.bloco-titulo{margin:28px 20px 8px;font-size:1rem;font-weight:700}
+.mes-nav{display:flex;align-items:center;justify-content:space-between;padding:0 8px}
+.mes-nav button{width:48px;height:48px;border:0;background:transparent;font-size:1.7rem;color:var(--tinta)}
+.mes-nav strong{font-size:1.05rem}
+.filtros{display:flex;gap:8px;padding:8px 20px}
+.filtros input,.filtros select{min-height:46px;padding:8px 12px;border:1px solid var(--linha);border-radius:12px;background:var(--papel)}
+.filtros input{flex:1;min-width:0}
+.filtros select{max-width:44%}
+.sumario{padding:4px 20px 0;margin:4px 0 0;color:var(--suave);font-size:.9rem}
+.dia{display:flex;justify-content:space-between;padding:20px 20px 8px;font-size:.85rem;font-weight:600;color:var(--suave)}
+.grupo{border-bottom:1px solid var(--linha)}
+.item{display:block;width:100%;text-align:left;background:var(--papel);border:0;border-top:1px solid var(--linha);padding:12px 20px}
+.l1{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.desc{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.val{font-weight:700;white-space:nowrap}
+.val.despesa{color:var(--despesa)}
+.val.receita{color:var(--receita)}
+.l2{display:flex;flex-wrap:wrap;gap:2px 14px;color:var(--suave);font-size:.85rem;margin-top:3px}
+.cat{display:inline-flex;align-items:center;gap:6px}
+.pend{color:var(--alerta);font-weight:600}
+.vazio{padding:40px 20px;text-align:center;color:var(--suave)}
+.vazio p{margin:0 0 16px}
+
+/* resumo */
+.hero{padding:12px 20px 0}
+.hero .rotulo{color:var(--suave);font-size:.95rem}
+.hero .grande{font-size:3rem;font-weight:700;letter-spacing:-.03em;line-height:1.1;margin:4px 0}
+.hero .comp{color:var(--suave);margin:10px 0 0;max-width:60ch}
+.hero .comp b{color:var(--tinta)}
+.fatos{display:grid;grid-template-columns:repeat(3,1fr);margin-top:22px;background:var(--papel);
+  border-top:1px solid var(--linha);border-bottom:1px solid var(--linha)}
+.fatos>div{padding:12px 14px;border-left:1px solid var(--linha);min-width:0}
+.fatos>div:first-child{border-left:0;padding-left:20px}
+.fatos small{display:block;color:var(--suave);font-size:.8rem}
+.fatos b{font-size:1rem}
+.nota{margin:0 20px 8px;color:var(--suave);font-size:.85rem}
+.cat-linha{padding:10px 20px}
+.cat-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.cat-nome{display:inline-flex;align-items:center;gap:8px;font-weight:600;min-width:0}
+.cat-val{white-space:nowrap}
+.cat-val small{color:var(--suave);margin-left:8px}
+.delta{margin-left:8px;font-size:.8rem;font-weight:600}
+.delta.mais{color:var(--despesa)}
+.delta.menos{color:var(--receita)}
+.barra{height:6px;border-radius:3px;background:var(--linha);margin-top:6px;overflow:hidden}
+.barra i{display:block;height:100%;border-radius:3px}
+.meses{display:flex;gap:8px;height:170px;padding:0 20px}
+.mcol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;padding:0;color:var(--suave)}
+.mtopo{position:relative;flex:1;width:100%}
+.mbar{position:absolute;left:0;right:0;bottom:0;border-radius:6px 6px 0 0;background:var(--linha);min-height:2px}
+.mcol[aria-current=true] .mbar{background:var(--acento)}
+.mcol[aria-current=true]{color:var(--tinta);font-weight:700}
+.mnome{font-size:.8rem}
+.mval{font-size:.72rem}
+
+/* ajustes */
+.ajustes{padding:8px 20px 0}
+.ajustes h2{font-size:1.1rem;margin:28px 0 6px}
+.ajustes h2:first-child{margin-top:12px}
+.ajustes .nota{margin:0 0 12px}
+.ajustes textarea{width:100%;min-height:130px;padding:10px 12px;border:1px solid var(--linha);border-radius:12px;background:var(--papel);resize:vertical}
+.ajustes .campo{margin-top:14px}
+.ajustes .campo input{min-height:48px}
+.acoes-linha{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.versao{margin:32px 0 0;color:var(--suave);font-size:.8rem}
+
+/* folha de edição, diálogo e aviso */
+.folha{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center}
+.folha-corpo{background:var(--fundo);width:100%;max-width:520px;max-height:92dvh;overflow:auto;
+  border-radius:20px 20px 0 0;animation:sobe .22s ease-out}
+.folha-topo{display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0}
+.folha-topo h2{font-size:1.2rem}
+.folha-corpo .acoes{bottom:0;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+@keyframes sobe{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.dialogo{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px}
+.dlg{background:var(--papel);border-radius:16px;padding:20px;max-width:380px;width:100%}
+.dlg h2{font-size:1.15rem}
+.dlg p{margin:8px 0 0;color:var(--suave)}
+.dlg-b{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.aviso{position:fixed;left:50%;transform:translateX(-50%);z-index:40;max-width:90%;
+  bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 16px);background:var(--tinta);color:var(--fundo);
+  padding:10px 16px;border-radius:12px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
+.aviso.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topo">
+    <h1 id="titulo">Lançar</h1>
+    <button type="button" id="btnSync" class="sync" data-estado="local" aria-live="polite">
+      <span class="ponto"></span><span id="syncTxt">Só neste aparelho</span>
+    </button>
+  </header>
+
+  <main>
+    <section id="tela-lancar" class="tela">
+      <div id="formNovo"></div>
+      <div id="ultimos"></div>
+    </section>
+
+    <section id="tela-lista" class="tela" hidden>
+      <div class="mes-nav">
+        <button type="button" data-mes="-1" aria-label="Mês anterior">‹</button>
+        <strong data-mes-nome></strong>
+        <button type="button" data-mes="1" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="filtros">
+        <input type="search" id="busca" placeholder="Buscar lançamento" aria-label="Buscar lançamento" autocomplete="off">
+        <select id="filtroCat" aria-label="Filtrar por categoria"></select>
+      </div>
+      <p class="sumario" id="sumarioLista"></p>
+      <div id="listaConteudo"></div>
+    </section>
+
+    <section id="tela-resumo" class="tela" hidden>
+      <div class="mes-nav">
+        <button type="button" data-mes="-1" aria-label="Mês anterior">‹</button>
+        <strong data-mes-nome></strong>
+        <button type="button" data-mes="1" aria-label="Próximo mês">›</button>
+      </div>
+      <div id="resumoConteudo"></div>
+    </section>
+
+    <section id="tela-ajustes" class="tela" hidden>
+      <div class="ajustes">
+        <h2>Planilha</h2>
+        <p class="nota">Cole o endereço gerado ao implantar o script (termina em /exec) e a senha que você definiu nele.</p>
+        <div class="campo">
+          <label class="rot" for="cfgUrl">Endereço do script</label>
+          <input id="cfgUrl" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <div class="campo">
+          <label class="rot" for="cfgToken">Senha (token)</label>
+          <input id="cfgToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="acoes-linha">
+          <button type="button" class="primario" id="btnSalvarPlanilha">Salvar e testar conexão</button>
+        </div>
+        <p class="info" id="estadoSync"></p>
+
+        <h2>Listas</h2>
+        <p class="nota">Um item por linha. Renomear ou remover um item aqui não altera lançamentos antigos.</p>
+        <div class="campo"><label class="rot" for="cfgCat">Categorias de despesa</label><textarea id="cfgCat"></textarea></div>
+        <div class="campo"><label class="rot" for="cfgCatRec">Categorias de receita</label><textarea id="cfgCatRec"></textarea></div>
+        <div class="campo"><label class="rot" for="cfgPag">Formas de pagamento</label><textarea id="cfgPag"></textarea></div>
+        <div class="campo"><label class="rot" for="cfgPes">Pessoas</label><textarea id="cfgPes" style="min-height:90px"></textarea></div>
+        <div class="acoes-linha">
+          <button type="button" class="primario" id="btnSalvarListas">Salvar listas</button>
+        </div>
+        <p class="erro" id="erroListas" role="alert" hidden></p>
+
+        <h2>Dados</h2>
+        <p class="nota">Os lançamentos ficam guardados neste aparelho e na planilha. O CSV é uma cópia de segurança.</p>
+        <div class="acoes-linha">
+          <button type="button" class="sec" id="btnSyncAgora">Sincronizar agora</button>
+          <button type="button" class="sec" id="btnCsv">Exportar CSV</button>
+        </div>
+        <p class="versao">Caderneta, versão 1.0</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="abas" aria-label="Seções">
+    <div class="abas-in">
+      <button type="button" data-aba="lancar" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Lançar
+      </button>
+      <button type="button" data-aba="lista">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Lançamentos
+      </button>
+      <button type="button" data-aba="resumo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20V11M12 20V4M18 20v-6"/></svg>Resumo
+      </button>
+      <button type="button" data-aba="ajustes">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2"/><circle cx="15" cy="16" r="2"/></svg>Ajustes
+      </button>
+    </div>
+  </nav>
+</div>
+
+<div id="folha" class="folha" hidden>
+  <div class="folha-corpo" role="dialog" aria-modal="true" aria-labelledby="folhaTitulo">
+    <div class="folha-topo">
+      <h2 id="folhaTitulo">Editar lançamento</h2>
+      <button type="button" id="fecharFolha" class="mini">Fechar</button>
+    </div>
+    <div id="formEd"></div>
+  </div>
+</div>
+<div id="dialogo" class="dialogo" hidden></div>
+<div id="aviso" class="aviso" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ====================================================================
+   Utilitários puros
+   ==================================================================== */
+/* PURAS-INICIO */
+const pad = n => String(n).padStart(2, '0');
+const isoDe = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dataDe = iso => { const [a, m, d] = iso.split('-').map(Number); return new Date(a, m - 1, d); };
+const soma = arr => Math.round(arr.reduce((t, i) => t + i.valor, 0) * 100) / 100;
+
+// Aceita "85", "85,5", "1.234,56", "1234.56", "R$ 85,50"
+function lerValor(txt) {
+  let s = String(txt == null ? '' : txt).replace(/[R$\s]/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  if (!/^\d+(\.\d+)?$/.test(s)) return NaN;
+  return Math.round(Number(s) * 100) / 100;
+}
+
+// Divide o total em n parcelas sem perder centavos (as primeiras levam o resto)
+function dividir(total, n) {
+  const cent = Math.round(total * 100);
+  const base = Math.floor(cent / n);
+  const resto = cent - base * n;
+  return Array.from({ length: n }, (_, i) => (base + (i < resto ? 1 : 0)) / 100);
+}
+
+// Mesmo dia nos meses seguintes; se o mês for menor, usa o último dia
+function somarMeses(iso, k) {
+  const [a, m, d] = iso.split('-').map(Number);
+  const alvo = new Date(a, m - 1 + k, 1);
+  const ultimo = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+  alvo.setDate(Math.min(d, ultimo));
+  return isoDe(alvo);
+}
+
+function mudarMes(ym, k) {
+  const [a, m] = ym.split('-').map(Number);
+  const d = new Date(a, m - 1 + k, 1);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1);
+}
+/* PURAS-FIM */
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const hojeISO = () => isoDe(new Date());
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmt = v => BRL.format(v);
+const compacto = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 });
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+function uuid() {
+  if (window.crypto && crypto.randomUUID) { try { return crypto.randomUUID(); } catch (e) { /* segue */ } }
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+}
+function cor(nome) {
+  let h = 0;
+  for (const ch of String(nome)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `hsl(${h % 360} 55% 50%)`;
+}
+function nomeMes(ym, estilo) {
+  const [a, m] = ym.split('-').map(Number);
+  const d = new Date(a, m - 1, 1);
+  if (estilo === 'curto') return new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(d).replace('.', '');
+  if (estilo === 'mes') return new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(d);
+  return cap(new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(d));
+}
+function rotuloDia(iso) {
+  return cap(new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(dataDe(iso)));
+}
+
+/* ====================================================================
+   Estado e armazenamento local
+   ==================================================================== */
+const CHAVE = 'caderneta.v1';
+const PADRAO = {
+  url: '', token: '',
+  categorias: ['Mercado', 'Alimentação', 'Transporte', 'Moradia', 'Contas', 'Saúde', 'Lazer', 'Educação', 'Compras', 'Assinaturas', 'Viagem', 'Outros'],
+  categoriasReceita: ['Salário', 'Extra', 'Reembolso', 'Outros'],
+  pagamentos: ['Pix', 'Débito', 'Crédito', 'Dinheiro'],
+  pessoas: ['Eu'],
+  ultimoPagamento: '', ultimaPessoa: ''
+};
+let db = { itens: {}, fila: [], cfg: Object.assign({}, PADRAO), ultimaSync: 0 };
+const ui = { aba: 'lancar', mes: hojeISO().slice(0, 7), busca: '', filtroCat: '', sync: 'idle', erro: '' };
+
+function carregar() {
+  try {
+    const j = JSON.parse(localStorage.getItem(CHAVE) || 'null');
+    if (j) {
+      db.itens = j.itens || {};
+      db.fila = j.fila || [];
+      db.cfg = Object.assign({}, PADRAO, j.cfg || {});
+      db.ultimaSync = j.ultimaSync || 0;
+    }
+  } catch (e) { /* começa vazio */ }
+}
+function salvar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(db)); }
+  catch (e) { avisar('Não foi possível guardar no aparelho. O armazenamento pode estar cheio.'); }
+}
+
+let tAviso = null;
+function avisar(msg) {
+  const el = $('#aviso');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(tAviso); tAviso = setTimeout(() => el.classList.remove('on'), 3200);
+}
+
+/* ====================================================================
+   Operações sobre lançamentos (sempre passam pela fila de sincronização)
+   ==================================================================== */
+const idDaOp = o => o.item ? o.item.id : o.id;
+function enfileirar(op) {
+  const id = idDaOp(op);
+  db.fila = db.fila.filter(o => idDaOp(o) !== id);   // só a operação mais recente de cada lançamento
+  db.fila.push(op);
+  salvar(); atualizarSyncUI(); agendarSync();
+}
+function gravar(item) {
+  item.atualizadoEm = new Date().toISOString();
+  db.itens[item.id] = item;
+  enfileirar({ op: 'up', item });
+}
+function remover(id) {
+  delete db.itens[id];
+  enfileirar({ op: 'del', id });
+}
+
+/* ====================================================================
+   Sincronização com o Google Sheets (via Apps Script)
+   ==================================================================== */
+let sincronizando = false, repetir = false, tSync = null;
+const configurado = () => !!(db.cfg.url && db.cfg.token);
+function agendarSync() { clearTimeout(tSync); tSync = setTimeout(() => sincronizar(false), 800); }
+
+function traduzirErro(e) {
+  if (e && e.name === 'AbortError') return 'A planilha demorou demais para responder.';
+  if (e instanceof SyntaxError) return 'Resposta inesperada. Confira se a implantação do script está com acesso para "Qualquer pessoa".';
+  if (e instanceof TypeError) return 'Não foi possível acessar a planilha. Verifique a conexão e o endereço.';
+  const m = String(e && e.message || e);
+  if (/token/i.test(m)) return 'A senha (token) não confere com a do script.';
+  return m;
+}
+
+async function sincronizar(manual) {
+  if (!configurado()) {
+    if (manual) avisar('Informe o endereço da planilha em Ajustes.');
+    atualizarSyncUI(); return { ok: false };
+  }
+  if (sincronizando) { repetir = true; return { ok: false }; }
+  if (!navigator.onLine) {
+    atualizarSyncUI();
+    if (manual) avisar('Você está offline. Os lançamentos serão enviados quando a conexão voltar.');
+    return { ok: false };
+  }
+  sincronizando = true; ui.sync = 'enviando'; atualizarSyncUI();
+  const enviadas = db.fila.slice();
+  const ctrl = new AbortController();
+  const limite = setTimeout(() => ctrl.abort(), 45000);
+  let resultado;
+  try {
+    const resp = await fetch(db.cfg.url, {
+      method: 'POST',
+      body: JSON.stringify({ token: db.cfg.token, acao: 'sync', ops: enviadas }),
+      signal: ctrl.signal
+    });
+    const r = await resp.json();
+    if (!r.ok) throw new Error(r.erro || 'A planilha recusou o pedido.');
+    db.fila = db.fila.filter(o => !enviadas.includes(o));
+    const remoto = {};
+    r.itens.forEach(i => { remoto[i.id] = i; });
+    db.fila.forEach(o => { if (o.op === 'up') remoto[o.item.id] = o.item; else delete remoto[o.id]; });
+    db.itens = remoto;
+    db.ultimaSync = Date.now();
+    ui.sync = 'ok'; ui.erro = '';
+    resultado = { ok: true, total: r.itens.length };
+  } catch (err) {
+    ui.sync = 'erro'; ui.erro = traduzirErro(err);
+    resultado = { ok: false, msg: ui.erro };
+    if (manual) avisar(ui.erro);
+  } finally {
+    clearTimeout(limite); sincronizando = false;
+  }
+  salvar(); atualizarSyncUI(); renderAtual();
+  if (repetir || (ui.sync === 'ok' && db.fila.length)) { repetir = false; agendarSync(); }
+  return resultado;
+}
+
+function atualizarSyncUI() {
+  let estado, txt;
+  const n = db.fila.length;
+  if (!configurado()) { estado = 'local'; txt = 'Só neste aparelho'; }
+  else if (ui.sync === 'enviando') { estado = 'enviando'; txt = 'Sincronizando'; }
+  else if (ui.sync === 'erro') { estado = 'erro'; txt = 'Falha ao sincronizar'; }
+  else if (!navigator.onLine) { estado = 'offline'; txt = n ? `Offline, ${n} ${n === 1 ? 'pendente' : 'pendentes'}` : 'Offline'; }
+  else if (n) { estado = 'pendente'; txt = `${n} para enviar`; }
+  else { estado = 'ok'; txt = 'Sincronizado'; }
+  $('#btnSync').dataset.estado = estado;
+  $('#syncTxt').textContent = txt;
+}
+
+/* ====================================================================
+   Formulário (usado em "Lançar" e na folha de edição)
+   ==================================================================== */
+let contadorForm = 0;
+function criarForm(raiz, modo, aoSalvar, aoExcluir) {
+  const uid = 'f' + (++contadorForm);
+  const st = { tipo: 'despesa', categoria: '', pagamento: '', quem: '', status: 'Pago', parcelas: 1 };
+  let infoParcela = '';
+
+  raiz.classList.add('form');
+  raiz.innerHTML = `
+    <div class="seg" data-g="tipo" role="group" aria-label="Tipo de lançamento">
+      <button type="button" data-v="despesa">Despesa</button><button type="button" data-v="receita">Receita</button>
+    </div>
+    <label class="valor"><span class="moeda">R$</span>
+      <input data-f="valor" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Valor em reais"></label>
+    <div class="campo"><label class="rot" for="${uid}d">Descrição</label>
+      <input id="${uid}d" data-f="descricao" list="${uid}l" autocomplete="off" placeholder="O que foi? (opcional)">
+      <datalist id="${uid}l"></datalist></div>
+    <div class="campo"><span class="rot">Categoria</span><div class="chips" data-g="categoria"></div></div>
+    <div class="campo"><span class="rot">Pagamento</span><div class="chips" data-g="pagamento"></div></div>
+    <div class="campo" data-w="quem"><span class="rot">Quem</span><div class="chips" data-g="quem"></div></div>
+    <div class="campo"><label class="rot" for="${uid}t">Data</label>
+      <div class="linha-data"><input id="${uid}t" type="date" data-f="data">
+        <button type="button" class="mini" data-dia="0">Hoje</button>
+        <button type="button" class="mini" data-dia="-1">Ontem</button></div></div>
+    <div class="campo"><span class="rot">Status</span>
+      <div class="seg" data-g="status" role="group" aria-label="Status">
+        <button type="button" data-v="Pago">Pago</button><button type="button" data-v="Pendente">Pendente</button></div></div>
+    <div class="campo" data-w="parcelas"><span class="rot">Parcelas</span>
+      <div class="passo">
+        <button type="button" class="mini" data-p="-1" aria-label="Menos uma parcela">−</button>
+        <span class="passo-n" data-n>1x</span>
+        <button type="button" class="mini" data-p="1" aria-label="Mais uma parcela">+</button>
+        <span class="previa" data-previa></span></div></div>
+    <p class="erro" role="alert" hidden></p>
+    <p class="info" data-info hidden></p>
+    <div class="acoes">
+      <button type="button" class="primario" data-salvar>${modo === 'editar' ? 'Salvar alterações' : 'Salvar lançamento'}</button>
+      ${modo === 'editar' ? '<button type="button" class="perigo" data-excluir>Excluir</button>' : ''}
+    </div>`;
+
+  const q = s => raiz.querySelector(s);
+  const inValor = q('[data-f=valor]'), inDesc = q('[data-f=descricao]'), inData = q('[data-f=data]');
+  const erro = q('.erro');
+
+  function chips(g, lista) {
+    const cont = q(`.chips[data-g=${g}]`);
+    const itens = lista.slice();
+    if (st[g] && !itens.includes(st[g])) itens.push(st[g]);
+    const chave = itens.join('\u0001');
+    if (cont.dataset.k !== chave) {            // só reconstrói se a lista mudou (evita perder o toque)
+      cont.dataset.k = chave; cont.textContent = '';
+      itens.forEach(v => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.dataset.v = v;
+        if (g === 'categoria') { const i = document.createElement('i'); i.className = 'cor'; i.style.background = cor(v); b.appendChild(i); }
+        b.appendChild(document.createTextNode(v));
+        cont.appendChild(b);
+      });
+    }
+    cont.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === st[g])));
+  }
+  function pintarParcelas() {
+    q('[data-n]').textContent = st.parcelas + 'x';
+    const v = lerValor(inValor.value);
+    q('[data-previa]').textContent = (st.parcelas > 1 && v > 0)
+      ? `Total dividido em ${st.parcelas}x de ${fmt(Math.round(v / st.parcelas * 100) / 100)}` : '';
+  }
+  function pintar() {
+    raiz.dataset.tipo = st.tipo;
+    raiz.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(st[b.parentNode.dataset.g] === b.dataset.v)));
+    chips('categoria', st.tipo === 'despesa' ? db.cfg.categorias : db.cfg.categoriasReceita);
+    chips('pagamento', db.cfg.pagamentos);
+    chips('quem', db.cfg.pessoas);
+    q('[data-w=quem]').hidden = db.cfg.pessoas.length < 2;
+    const credito = modo === 'novo' && st.tipo === 'despesa' && /cr[eé]dito/i.test(st.pagamento);
+    if (!credito) st.parcelas = 1;
+    q('[data-w=parcelas]').hidden = !credito;
+    pintarParcelas();
+    const info = q('[data-info]');
+    info.textContent = infoParcela; info.hidden = !infoParcela;
+  }
+  function sugestoes() {
+    const vistos = new Set(), out = [];
+    Object.values(db.itens).sort((a, b) => b.data.localeCompare(a.data)).forEach(i => {
+      const k = (i.descricao || '').toLowerCase();
+      if (k && !vistos.has(k)) { vistos.add(k); out.push(i.descricao); }
+    });
+    q('datalist').innerHTML = out.slice(0, 150).map(s => `<option value="${esc(s)}">`).join('');
+  }
+  function falha(msg, foco) { erro.textContent = msg; erro.hidden = false; if (foco) foco.focus(); }
+  function enviar() {
+    const valor = lerValor(inValor.value);
+    if (!(valor > 0)) return falha('Informe um valor maior que zero.', inValor);
+    if (!st.categoria) return falha('Escolha uma categoria.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inData.value)) return falha('Informe a data.', inData);
+    erro.hidden = true;
+    aoSalvar({
+      tipo: st.tipo, valor, descricao: inDesc.value.trim() || st.categoria, categoria: st.categoria,
+      pagamento: st.pagamento, quem: st.quem, status: st.status, data: inData.value, parcelas: st.parcelas
+    });
+  }
+
+  raiz.addEventListener('click', ev => {
+    const t = ev.target.closest('button');
+    if (!t || !raiz.contains(t)) return;
+    if (t.dataset.v !== undefined) {
+      const g = t.closest('[data-g]').dataset.g;
+      st[g] = t.dataset.v;
+      if (g === 'tipo') st.categoria = '';
+      pintar(); return;
+    }
+    if (t.dataset.dia !== undefined) {
+      const d = new Date(); d.setDate(d.getDate() + Number(t.dataset.dia)); inData.value = isoDe(d); return;
+    }
+    if (t.dataset.p !== undefined) {
+      st.parcelas = Math.min(48, Math.max(1, st.parcelas + Number(t.dataset.p))); pintarParcelas(); return;
+    }
+    if (t.hasAttribute('data-salvar')) { enviar(); return; }
+    if (t.hasAttribute('data-excluir') && aoExcluir) aoExcluir();
+  });
+  inValor.addEventListener('input', pintarParcelas);
+  inDesc.addEventListener('change', () => {            // sugere a categoria do último lançamento igual
+    if (modo !== 'novo' || st.categoria) return;
+    const k = inDesc.value.trim().toLowerCase();
+    if (!k) return;
+    const achado = Object.values(db.itens)
+      .filter(i => i.tipo === st.tipo && (i.descricao || '').toLowerCase() === k)
+      .sort((a, b) => b.data.localeCompare(a.data))[0];
+    if (achado) { st.categoria = achado.categoria; pintar(); }
+  });
+
+  return {
+    atualizar() { pintar(); sugestoes(); },
+    limpar() {
+      st.tipo = 'despesa'; st.categoria = '';
+      st.pagamento = db.cfg.ultimoPagamento || db.cfg.pagamentos[0] || '';
+      st.quem = db.cfg.ultimaPessoa || db.cfg.pessoas[0] || '';
+      st.status = 'Pago'; st.parcelas = 1; infoParcela = '';
+      inValor.value = ''; inDesc.value = ''; inData.value = hojeISO(); erro.hidden = true;
+      pintar(); sugestoes();
+    },
+    preencher(it) {
+      st.tipo = it.tipo; st.categoria = it.categoria; st.pagamento = it.pagamento;
+      st.quem = it.quem; st.status = it.status; st.parcelas = 1;
+      inValor.value = Number(it.valor).toFixed(2).replace('.', ',');
+      inDesc.value = it.descricao; inData.value = it.data; erro.hidden = true;
+      infoParcela = it.totalParcelas > 1 ? `Parcela ${it.parcela} de ${it.totalParcelas}. A alteração vale só para esta parcela.` : '';
+      pintar(); sugestoes();
+    }
+  };
+}
+
+/* ====================================================================
+   Lançar (novo) e edição
+   ==================================================================== */
+function salvarNovo(d) {
+  const agora = new Date().toISOString();
+  const n = d.parcelas > 1 ? d.parcelas : 1;
+  const valores = dividir(d.valor, n);
+  const grupo = n > 1 ? uuid() : '';
+  const hoje = hojeISO();
+  for (let k = 0; k < n; k++) {
+    const data = k === 0 ? d.data : somarMeses(d.data, k);
+    gravar({
+      id: uuid(), data, valor: valores[k], descricao: d.descricao, categoria: d.categoria,
+      pagamento: d.pagamento, quem: d.quem, tipo: d.tipo,
+      status: (k > 0 && data > hoje) ? 'Pendente' : d.status,
+      parcela: k + 1, totalParcelas: n, grupo, criadoEm: agora
+    });
+  }
+  db.cfg.ultimoPagamento = d.pagamento; db.cfg.ultimaPessoa = d.quem;
+  salvar();
+  formNovo.limpar();
+  avisar(n > 1 ? `Lançado em ${n} parcelas.` : 'Lançamento salvo.');
+  renderUltimos();
+}
+
+let editandoId = null;
+function abrirEdicao(id) {
+  const it = db.itens[id];
+  if (!it) return;
+  editandoId = id;
+  formEd.preencher(it);
+  $('#folha').hidden = false;
+  document.body.classList.add('trava');
+}
+function fecharEdicao() {
+  $('#folha').hidden = true; editandoId = null;
+  document.body.classList.remove('trava');
+}
+function salvarEdicao(d) {
+  const it = db.itens[editandoId];
+  if (!it) { fecharEdicao(); return; }
+  Object.assign(it, { tipo: d.tipo, valor: d.valor, descricao: d.descricao, categoria: d.categoria,
+    pagamento: d.pagamento, quem: d.quem, status: d.status, data: d.data });
+  gravar(it);
+  fecharEdicao(); avisar('Alterações salvas.'); renderAtual();
+}
+async function excluirAtual() {
+  const it = db.itens[editandoId];
+  if (!it) return;
+  let escolha;
+  if (it.totalParcelas > 1 && it.grupo) {
+    escolha = await perguntar('Excluir lançamento', `Este lançamento é a parcela ${it.parcela} de ${it.totalParcelas}.`, [
+      { r: 'Só esta parcela', v: 'uma', perigo: true },
+      { r: 'Esta e as próximas', v: 'proximas', perigo: true },
+      { r: 'Todas as parcelas', v: 'todas', perigo: true },
+      { r: 'Cancelar', v: null }]);
+  } else {
+    escolha = await perguntar('Excluir lançamento', `${it.descricao}, ${fmt(it.valor)}. Esta ação não pode ser desfeita.`, [
+      { r: 'Excluir', v: 'uma', perigo: true }, { r: 'Cancelar', v: null }]);
+  }
+  if (!escolha) return;
+  const alvos = Object.values(db.itens).filter(x => escolha === 'uma' ? x.id === it.id
+    : x.grupo === it.grupo && (escolha === 'todas' || x.parcela >= it.parcela));
+  alvos.forEach(x => remover(x.id));
+  fecharEdicao();
+  avisar(alvos.length > 1 ? `${alvos.length} parcelas excluídas.` : 'Lançamento excluído.');
+  renderAtual();
+}
+function perguntar(titulo, texto, botoes) {
+  return new Promise(res => {
+    const dlg = $('#dialogo');
+    dlg.innerHTML = `<div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">
+      <h2 id="dlgT">${esc(titulo)}</h2><p>${esc(texto)}</p><div class="dlg-b"></div></div>`;
+    const area = dlg.querySelector('.dlg-b');
+    botoes.forEach(b => {
+      const el = document.createElement('button');
+      el.type = 'button'; el.textContent = b.r; el.className = b.perigo ? 'perigo' : 'sec';
+      el.addEventListener('click', () => { dlg.hidden = true; res(b.v); });
+      area.appendChild(el);
+    });
+    dlg.hidden = false;
+    const ult = area.lastElementChild; if (ult) ult.focus();
+    dlg._cancelar = () => { dlg.hidden = true; res(null); };
+  });
+}
+
+/* ====================================================================
+   Renderização das telas
+   ==================================================================== */
+function htmlItem(i, comData) {
+  const sinal = i.tipo === 'receita' ? '+' : '\u2212';
+  const dd = comData ? `<span>${esc(i.data.slice(8))}/${esc(i.data.slice(5, 7))}</span>` : '';
+  const parc = i.totalParcelas > 1 ? `<span>${i.parcela}/${i.totalParcelas}</span>` : '';
+  const pend = i.status === 'Pendente' ? '<span class="pend">Pendente</span>' : '';
+  const quem = db.cfg.pessoas.length > 1 && i.quem ? `<span>${esc(i.quem)}</span>` : '';
+  return `<button type="button" class="item" data-id="${esc(i.id)}">
+    <span class="l1"><span class="desc">${esc(i.descricao)}</span><span class="val ${esc(i.tipo)}">${sinal} ${fmt(i.valor)}</span></span>
+    <span class="l2">${dd}<span class="cat"><i class="cor" style="background:${cor(i.categoria)}"></i>${esc(i.categoria)}</span><span>${esc(i.pagamento)}</span>${quem}${parc}${pend}</span>
+  </button>`;
+}
+
+function renderUltimos() {
+  const itens = Object.values(db.itens).filter(i => i.parcela === 1)
+    .sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || '')).slice(0, 5);
+  $('#ultimos').innerHTML = itens.length
+    ? '<h2 class="bloco-titulo">Últimos lançamentos</h2><div class="grupo">' + itens.map(i => htmlItem(i, true)).join('') + '</div>' : '';
+}
+
+function pintarMesNav() { $$('[data-mes-nome]').forEach(e => { e.textContent = nomeMes(ui.mes); }); }
+
+function renderLista() {
+  pintarMesNav();
+  const sel = $('#filtroCat');
+  const cats = Array.from(new Set([].concat(db.cfg.categorias, db.cfg.categoriasReceita, Object.values(db.itens).map(i => i.categoria)))).filter(Boolean);
+  sel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.value = ui.filtroCat;
+
+  const termo = ui.busca.trim().toLowerCase();
+  const doMes = Object.values(db.itens).filter(i => i.data.startsWith(ui.mes));
+  const itens = doMes.filter(i => (!ui.filtroCat || i.categoria === ui.filtroCat) &&
+      (!termo || [i.descricao, i.categoria, i.pagamento, i.quem].join(' ').toLowerCase().includes(termo)))
+    .sort((a, b) => b.data.localeCompare(a.data) || (b.criadoEm || '').localeCompare(a.criadoEm || ''));
+
+  const desp = soma(itens.filter(i => i.tipo === 'despesa')), rec = soma(itens.filter(i => i.tipo === 'receita'));
+  $('#sumarioLista').textContent = itens.length
+    ? `${itens.length} ${itens.length === 1 ? 'lançamento' : 'lançamentos'}, despesas de ${fmt(desp)}` + (rec ? `, receitas de ${fmt(rec)}` : '') : '';
+
+  const alvo = $('#listaConteudo');
+  if (!itens.length) {
+    alvo.innerHTML = doMes.length
+      ? '<div class="vazio"><p>Nada encontrado com esses filtros.</p></div>'
+      : `<div class="vazio"><p>Nenhum lançamento em ${esc(nomeMes(ui.mes, 'mes'))}.</p><button type="button" class="sec" data-ir="lancar">Lançar agora</button></div>`;
+    return;
+  }
+  const dias = {};
+  itens.forEach(i => { (dias[i.data] = dias[i.data] || []).push(i); });
+  alvo.innerHTML = Object.keys(dias).sort().reverse().map(d => {
+    const totalDia = soma(dias[d].filter(i => i.tipo === 'despesa'));
+    return `<div class="dia"><span>${esc(rotuloDia(d))}</span><span>${totalDia ? fmt(totalDia) : ''}</span></div>
+      <div class="grupo">${dias[d].map(i => htmlItem(i, false)).join('')}</div>`;
+  }).join('');
+}
+
+function agrupar(arr) {
+  const o = {};
+  arr.forEach(i => { o[i.categoria] = Math.round(((o[i.categoria] || 0) + i.valor) * 100) / 100; });
+  return o;
+}
+
+function renderResumo() {
+  pintarMesNav();
+  const M = ui.mes, P = mudarMes(M, -1), hoje = hojeISO();
+  const ehAtual = M === hoje.slice(0, 7);
+  const todos = Object.values(db.itens);
+  const doMes = todos.filter(i => i.data.startsWith(M));
+  const desp = doMes.filter(i => i.tipo === 'despesa'), rec = doMes.filter(i => i.tipo === 'receita');
+  const tDesp = soma(desp), tRec = soma(rec), aPagar = soma(desp.filter(i => i.status === 'Pendente'));
+  const alvo = $('#resumoConteudo');
+
+  if (!doMes.length) {
+    alvo.innerHTML = `<div class="vazio"><p>Nenhum lançamento em ${esc(nomeMes(M, 'mes'))}.</p><button type="button" class="sec" data-ir="lancar">Lançar agora</button></div>`;
+    return;
+  }
+
+  // Comparação justa: mês em andamento é comparado com o mesmo período do mês anterior
+  const limite = ehAtual ? Number(hoje.slice(8, 10)) : 99;
+  const diaDe = i => Number(i.data.slice(8, 10));
+  const baseAtual = desp.filter(i => diaDe(i) <= limite);
+  const prevDesp = todos.filter(i => i.tipo === 'despesa' && i.data.startsWith(P));
+  const basePrev = prevDesp.filter(i => diaDe(i) <= limite);
+  const a = soma(baseAtual), b = soma(basePrev);
+  const mP = nomeMes(P, 'mes');
+  let comp;
+  if (!prevDesp.length) {
+    comp = `Sem lançamentos em ${esc(mP)} para comparar.`;
+  } else {
+    const dif = Math.round((a - b) * 100) / 100;
+    const pct = b > 0 ? ` (${Math.round(Math.abs(dif) / b * 100)}%)` : '';
+    const veredito = dif === 0 ? 'Exatamente o mesmo valor.' : `<b>${fmt(Math.abs(dif))} ${dif > 0 ? 'a mais' : 'a menos'}</b>${pct}.`;
+    comp = (ehAtual
+      ? `Até o dia ${limite} foram ${fmt(a)}. No mesmo período de ${esc(mP)}, ${fmt(b)}. `
+      : `${esc(nomeMes(M, 'mes'))}: ${fmt(a)}. ${esc(cap(mP))}: ${fmt(b)}. `) + veredito;
+  }
+
+  // Categorias
+  const porCat = agrupar(desp), atualCat = agrupar(baseAtual), prevCat = agrupar(basePrev);
+  const linhas = Object.entries(porCat).sort((x, y) => y[1] - x[1]);
+  const maxCat = linhas.length ? linhas[0][1] : 1;
+  const htmlCat = linhas.map(([nome, v]) => {
+    let delta = '';
+    if (prevDesp.length) {
+      const dif = Math.round(((atualCat[nome] || 0) - (prevCat[nome] || 0)) * 100) / 100;
+      if (dif !== 0) delta = `<span class="delta ${dif > 0 ? 'mais' : 'menos'}">${dif > 0 ? '+' : '\u2212'}${fmt(Math.abs(dif))}</span>`;
+    }
+    const pct = tDesp > 0 ? Math.round(v / tDesp * 100) : 0;
+    return `<div class="cat-linha"><div class="cat-top">
+      <span class="cat-nome"><i class="cor" style="background:${cor(nome)}"></i>${esc(nome)}</span>
+      <span class="cat-val">${fmt(v)}<small>${pct}%</small>${delta}</span></div>
+      <div class="barra"><i style="width:${Math.max(2, v / maxCat * 100)}%;background:${cor(nome)}"></i></div></div>`;
+  }).join('');
+
+  // Últimos 6 meses
+  const seis = [];
+  for (let k = 5; k >= 0; k--) {
+    const ym = mudarMes(M, -k);
+    seis.push({ ym, total: soma(todos.filter(i => i.tipo === 'despesa' && i.data.startsWith(ym))) });
+  }
+  const maxMes = Math.max(1, ...seis.map(s => s.total));
+  const htmlMeses = seis.map(s => `<button type="button" class="mcol" data-ym="${s.ym}" ${s.ym === M ? 'aria-current="true"' : ''}
+      aria-label="${esc(nomeMes(s.ym))}: ${fmt(s.total)}">
+      <span class="mtopo"><span class="mbar" style="height:${s.total / maxMes * 100}%"></span></span>
+      <span class="mval">${s.total ? esc(compacto.format(s.total)) : '0'}</span>
+      <span class="mnome">${esc(nomeMes(s.ym, 'curto'))}</span></button>`).join('');
+
+  const top = desp.slice().sort((x, y) => y.valor - x.valor).slice(0, 5);
+  const saldo = Math.round((tRec - tDesp) * 100) / 100;
+
+  alvo.innerHTML = `
+    <div class="hero">
+      <div class="rotulo">Despesas de ${esc(nomeMes(M, 'mes'))}</div>
+      <div class="grande">${fmt(tDesp)}</div>
+      <p class="comp">${comp}</p>
+    </div>
+    <div class="fatos">
+      <div><small>Receitas</small><b>${fmt(tRec)}</b></div>
+      <div><small>Saldo</small><b style="color:var(${saldo < 0 ? '--despesa' : '--receita'})">${fmt(saldo)}</b></div>
+      <div><small>A pagar</small><b>${fmt(aPagar)}</b></div>
+    </div>
+    <h2 class="bloco-titulo">Por categoria</h2>
+    ${prevDesp.length ? `<p class="nota">Valores do mês inteiro. A variação compara ${ehAtual ? 'com o mesmo período de' : 'com'} ${esc(mP)}.</p>` : ''}
+    ${htmlCat || '<p class="nota">Sem despesas neste mês.</p>'}
+    <h2 class="bloco-titulo">Despesas nos últimos 6 meses</h2>
+    <div class="meses">${htmlMeses}</div>
+    ${top.length ? `<h2 class="bloco-titulo">Maiores gastos do mês</h2><div class="grupo">${top.map(i => htmlItem(i, true)).join('')}</div>` : ''}`;
+}
+
+function preencherAjustes() {
+  $('#cfgUrl').value = db.cfg.url; $('#cfgToken').value = db.cfg.token;
+  $('#cfgCat').value = db.cfg.categorias.join('\n');
+  $('#cfgCatRec').value = db.cfg.categoriasReceita.join('\n');
+  $('#cfgPag').value = db.cfg.pagamentos.join('\n');
+  $('#cfgPes').value = db.cfg.pessoas.join('\n');
+  $('#erroListas').hidden = true;
+  atualizarEstadoAjustes();
+}
+function atualizarEstadoAjustes() {
+  let t;
+  if (!configurado()) t = 'Sem planilha conectada. Por enquanto os lançamentos ficam só neste aparelho.';
+  else if (ui.erro) t = ui.erro;
+  else if (db.ultimaSync) t = 'Última sincronização às ' + new Date(db.ultimaSync).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.';
+  else t = 'Ainda não sincronizado.';
+  $('#estadoSync').textContent = t;
+}
+
+function renderAtual() {
+  if (ui.aba === 'lancar') renderUltimos();
+  else if (ui.aba === 'lista') renderLista();
+  else if (ui.aba === 'resumo') renderResumo();
+  else if (ui.aba === 'ajustes') atualizarEstadoAjustes();
+}
+
+const TITULOS = { lancar: 'Lançar', lista: 'Lançamentos', resumo: 'Resumo', ajustes: 'Ajustes' };
+function ir(aba) {
+  ui.aba = aba;
+  $$('.tela').forEach(s => { s.hidden = s.id !== 'tela-' + aba; });
+  $$('.abas button').forEach(b => { if (b.dataset.aba === aba) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  $('#titulo').textContent = TITULOS[aba];
+  if (aba === 'ajustes') preencherAjustes();
+  if (aba === 'lancar') formNovo.atualizar();
+  renderAtual();
+  window.scrollTo(0, 0);
+}
+
+/* ====================================================================
+   Exportar CSV
+   ==================================================================== */
+function exportarCSV() {
+  const cab = ['Data', 'Valor', 'Descrição', 'Categoria', 'Pagamento', 'Quem', 'Tipo', 'Status', 'Parcela', 'Total parcelas', 'Grupo', 'ID', 'Criado em', 'Atualizado em'];
+  const campos = ['data', 'valor', 'descricao', 'categoria', 'pagamento', 'quem', 'tipo', 'status', 'parcela', 'totalParcelas', 'grupo', 'id', 'criadoEm', 'atualizadoEm'];
+  const linhas = [cab].concat(Object.values(db.itens).sort((x, y) => x.data.localeCompare(y.data))
+    .map(i => campos.map(c => c === 'valor' ? String(i.valor).replace('.', ',') : (i[c] == null ? '' : i[c]))));
+  const csv = '\ufeff' + linhas.map(l => l.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'caderneta-' + hojeISO() + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+/* ====================================================================
+   Inicialização
+   ==================================================================== */
+carregar();
+const formNovo = criarForm($('#formNovo'), 'novo', salvarNovo);
+const formEd = criarForm($('#formEd'), 'editar', salvarEdicao, excluirAtual);
+formNovo.limpar();
+
+document.addEventListener('click', ev => {
+  const it = ev.target.closest('.item[data-id]');
+  if (it) { abrirEdicao(it.dataset.id); return; }
+  const mes = ev.target.closest('[data-mes]');
+  if (mes) { ui.mes = mudarMes(ui.mes, Number(mes.dataset.mes)); renderAtual(); return; }
+  const ym = ev.target.closest('[data-ym]');
+  if (ym) { ui.mes = ym.dataset.ym; renderAtual(); return; }
+  const go = ev.target.closest('[data-ir]');
+  if (go) { ir(go.dataset.ir); return; }
+  const ab = ev.target.closest('.abas button');
+  if (ab) ir(ab.dataset.aba);
+});
+$('#busca').addEventListener('input', e => { ui.busca = e.target.value; renderLista(); });
+$('#filtroCat').addEventListener('change', e => { ui.filtroCat = e.target.value; renderLista(); });
+$('#fecharFolha').addEventListener('click', fecharEdicao);
+$('#folha').addEventListener('click', e => { if (e.target.id === 'folha') fecharEdicao(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const dlg = $('#dialogo');
+  if (!dlg.hidden && dlg._cancelar) dlg._cancelar();
+  else if (!$('#folha').hidden) fecharEdicao();
+});
+
+$('#btnSync').addEventListener('click', () => {
+  if (!configurado()) { ir('ajustes'); return; }
+  sincronizar(true);
+});
+$('#btnSyncAgora').addEventListener('click', async () => {
+  const r = await sincronizar(true);
+  if (r && r.ok) avisar('Sincronizado.');
+});
+$('#btnSalvarPlanilha').addEventListener('click', async () => {
+  const url = $('#cfgUrl').value.trim(), token = $('#cfgToken').value.trim();
+  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { avisar('O endereço deve começar com https://script.google.com e terminar em /exec.'); return; }
+  if (!token) { avisar('Informe a senha (token) definida no script.'); return; }
+  db.cfg.url = url; db.cfg.token = token; salvar();
+  const r = await sincronizar(true);
+  if (r && r.ok) avisar(`Conectado. ${r.total} ${r.total === 1 ? 'lançamento' : 'lançamentos'} na planilha.`);
+});
+$('#btnSalvarListas').addEventListener('click', () => {
+  const lista = id => Array.from(new Set($(id).value.split('\n').map(s => s.trim()).filter(Boolean)));
+  const cat = lista('#cfgCat'), catRec = lista('#cfgCatRec'), pag = lista('#cfgPag'), pes = lista('#cfgPes');
+  const erro = $('#erroListas');
+  if (!cat.length || !catRec.length || !pag.length || !pes.length) {
+    erro.textContent = 'Cada lista precisa ter pelo menos um item.'; erro.hidden = false; return;
+  }
+  erro.hidden = true;
+  Object.assign(db.cfg, { categorias: cat, categoriasReceita: catRec, pagamentos: pag, pessoas: pes });
+  salvar(); formNovo.atualizar(); formEd.atualizar(); avisar('Listas salvas.');
+});
+$('#btnCsv').addEventListener('click', exportarCSV);
+
+window.addEventListener('online', () => { atualizarSyncUI(); sincronizar(false); });
+window.addEventListener('offline', atualizarSyncUI);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && configurado() && Date.now() - db.ultimaSync > 60000) sincronizar(false);
+});
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* funciona sem */ });
+}
+
+atualizarSyncUI();
+ir('lancar');
+sincronizar(false);
+})();
+</script>
+</body>
+</html>
